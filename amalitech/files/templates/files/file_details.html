@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ file.title }}</h1>
+<p><strong>Description:</strong> {{ file.description }}</p>
+<p><strong>Uploaded by:</strong> {{ file.uploaded_by.username }} on {{ file.upload_date }}</p>
+
+<!-- Download link could be implemented here -->
+<a href="{% url 'files:download' file.id %}">Download</a>
+
+<!-- Back to list link -->
+<a href="{% url 'files:files' %}">Back to List</a>
+
+
+<form method="post" action="{% url 'files:send_email' file.id %}">
+    {% csrf_token %}
+    {{ email_form.as_p }}
+    <button type="submit">Send Email</button>
+</form>
+
+{% endblock %}

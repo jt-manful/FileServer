@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Available Files</h1>
+
+<form action="" method="GET">
+    <input type="text" name="q" placeholder="Search files..." value="{{ request.GET.q }}">
+    <button type="submit">Search</button>
+</form>
+
+<ul>
+    {% for file in files %}
+    <li>
+        <strong>{{ file.title }}</strong> - uploaded by {{ file.uploaded_by }} on {{ file.upload_date }}
+        <a href="{% url 'files:file_details' file.id %}">View details</a>
+        <!-- Include a download link if you implement that functionality -->
+    </li>
+    {% empty %}
+    <li>No files available.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
