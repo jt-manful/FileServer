@@ -1,5 +1,6 @@
 from django.views.generic import ListView, DetailView
 from .models import File
+from django.contrib.auth.decorators import login_required
 import os
 from django.http import FileResponse, Http404, HttpResponse
 from django.views import View
@@ -8,10 +9,10 @@ from django.db.models import Q
 from django.core.mail import EmailMessage
 from django.shortcuts import render, redirect
 from django.conf import settings
-from .forms import EmailForm
+from .forms import EmailForm, FileUploadForm
 
 
-
+@login_required
 class FileDownloadView(View):
     def get(self, request, pk):
         if not request.user.is_authenticated:
@@ -72,3 +73,25 @@ def send_file_email(request, pk):
         form = EmailForm()
 
     return render(request, 'files/file_details.html', {'file': file, 'email_form': form})
+
+
+#Admin 
+# 1. Should be able to upload files with a title and description 
+# 2. Should be able to see the number of downloads and number of emails sent for each file
+class UploadFileView(View):
+    def get(self, request):
+        if not request.user.is_admin:
+            return HttpResponse("You must be an admin to upload files", status=403)
+        form = FileUploadForm()
+        return render(request, 'files/upload_file.html', {'upload_form': form})
+
+    def post(self, request):
+        if not request.user.is_admin:
+            return HttpResponse("You must be an admin to upload files", status=403)
+        form = FileUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            new_file = form.save(commit=False)
+            new_file.uploaded_by = request.user
+            new_file.save()
+            return redirect('files:files')
+        return render(request, 'files/upload_file.html', {'upload_form': form}) 

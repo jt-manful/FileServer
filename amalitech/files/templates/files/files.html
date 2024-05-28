@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+{% if user.is_authenticated and user.is_admin %}
+<a href="{% url 'files:upload_file' %}">Upload File</a>
+{% endif %}
+
+
 <h1>Available Files</h1>
 
 <form action="" method="GET">

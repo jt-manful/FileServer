@@ -21,3 +21,6 @@ class Download(models.Model):
 
     def __str__(self):
         return f"{self.user.username} downloaded {self.file.title}"
+    
+    def download_count(self):
+        return Download.objects.filter(file=self).count()

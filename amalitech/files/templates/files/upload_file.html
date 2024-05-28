@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Upload a New File</h1>
+
+{% if not user.is_admin %}
+    <p>You must be an admin to upload files.</p>
+{% else %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ upload_form.as_p }}
+        <button type="submit">Upload File</button>
+    </form>
+{% endif %}
+
+{% endblock %}
