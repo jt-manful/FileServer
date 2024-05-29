@@ -4,8 +4,11 @@
 <h1>{{ file.title }}</h1>
 <p><strong>Description:</strong> {{ file.description }}</p>
 <p><strong>Uploaded by:</strong> {{ file.uploaded_by.username }} on {{ file.upload_date }}</p>
+{% if  user.is_admin %}
+<p><strong>Number of Downloads:</strong> {{ download_count }}  </p>
+<p><strong>Number of Emails Sent:</strong> {{ email_count }}</p>
 
-<!-- Download link could be implemented here -->
+{% endif %}
 <a href="{% url 'files:download' file.id %}">Download</a>
 
 <!-- Back to list link -->

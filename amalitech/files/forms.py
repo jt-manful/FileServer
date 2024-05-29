@@ -3,7 +3,7 @@ from .models import File
 
 class EmailForm(forms.Form):
     email = forms.EmailField()
-    file = forms.ModelChoiceField(queryset=File.objects.none())  # Start with an empty queryset
+    file = forms.ModelChoiceField(queryset=File.objects.none())  
 
     def __init__(self, *args, **kwargs):
         file_instance = kwargs.pop('file_instance', None)
@@ -11,7 +11,7 @@ class EmailForm(forms.Form):
         if file_instance:
             # Set the queryset to only include the specific file instance
             self.fields['file'].queryset = File.objects.filter(pk=file_instance.pk)
-
+            self.fields['file'].initial = file_instance
 
 
 class FileUploadForm(forms.ModelForm):

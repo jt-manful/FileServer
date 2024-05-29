@@ -1,27 +1,37 @@
 from django.views.generic import ListView, DetailView
-from .models import File
+from .models import File, Download, EmailSent
 from django.contrib.auth.decorators import login_required
 import os
+from django.db.models import Count
 from django.http import FileResponse, Http404, HttpResponse
 from django.views import View
 from django.conf import settings
 from django.db.models import Q
 from django.core.mail import EmailMessage
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from .forms import EmailForm, FileUploadForm
+from datetime import timezone
 
 
 @login_required
 class FileDownloadView(View):
     def get(self, request, pk):
+        print("past here 1 req made")
         if not request.user.is_authenticated:
+            print("past here 2 not auth")
+
             return HttpResponse("You must be logged in to download files", status=403)
-        
-        file = File.objects.get(pk=pk)
-        file_path = file.file.path
+        print("past here 3")
+
+        file_instance = File.objects.get(pk=pk)
+        print("file instace title", file_instance.title)
+        file_path = file_instance.file.path
+
         if os.path.exists(file_path):
-            response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename=file.title)
+            response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename=file_instance.title)
+            Download.objects.create(file=file_instance, user=request.user, download_date=timezone.now())
+
             return response
         raise Http404("File does not exist")
     
@@ -45,19 +55,30 @@ class FileDetailView(DetailView):
     template_name = 'files/file_details.html'
     context_object_name = 'file'
 
-    
-  
+    def get_queryset(self):
+        return File.objects.all().annotate(
+            total_downloads=Count('download'),
+            total_emails=Count('emailsent')
+        )
+
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        return super().get_object(queryset=queryset)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         file_instance = self.get_object()
-        # Pass the current file instance to the form
-        context['email_form'] = EmailForm(file_instance=file_instance)
+        # print("file instance", file_instance.title)  # This should now work
+        context['download_count'] = file_instance.total_downloads
+        context['email_count'] = file_instance.total_emails
+        context['email_form'] = EmailForm(file_instance=file_instance)  # Pass file_instance here
         return context
 
 def send_file_email(request, pk):
-    file = File.objects.get(pk=pk)
+    file = get_object_or_404(File, pk=pk)
     if request.method == 'POST':
-        form = EmailForm(request.POST)
+        form = EmailForm(request.POST, file_instance=file)
         if form.is_valid():
             # Sending the email with the file
             email = EmailMessage(
@@ -66,18 +87,17 @@ def send_file_email(request, pk):
                 settings.EMAIL_HOST_USER,
                 [form.cleaned_data['email']]
             )
+            EmailSent.objects.create(file=file, user=request.user)
+
             email.attach_file(file.file.path)
             email.send()
-            return redirect('files:details', pk=pk)
+            return redirect('files:file_details', pk=pk)
     else:
-        form = EmailForm()
+        form = EmailForm(file_instance=file)
 
     return render(request, 'files/file_details.html', {'file': file, 'email_form': form})
 
-
-#Admin 
 # 1. Should be able to upload files with a title and description 
-# 2. Should be able to see the number of downloads and number of emails sent for each file
 class UploadFileView(View):
     def get(self, request):
         if not request.user.is_admin:
@@ -95,3 +115,6 @@ class UploadFileView(View):
             new_file.save()
             return redirect('files:files')
         return render(request, 'files/upload_file.html', {'upload_form': form}) 
+    
+
+# 2. Should be able to see the number of downloads and number of emails sent for each file

@@ -12,6 +12,12 @@ class File(models.Model):
     def __str__(self):
         return self.title
     
+    def download_count(self):
+        return Download.objects.filter(file=self).count()
+
+    def email_count(self):
+        return EmailSent.objects.filter(file=self).count()
+    
 
 
 class Download(models.Model):
@@ -24,3 +30,12 @@ class Download(models.Model):
     
     def download_count(self):
         return Download.objects.filter(file=self).count()
+    
+
+class EmailSent(models.Model):
+    file = models.ForeignKey(File, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    email_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Email sent by {self.user.username} for {self.file.title}"
